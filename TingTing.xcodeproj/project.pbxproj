@@ -27,6 +27,7 @@
 		CE3251702D6E080E0078A4E3 /* TingTing.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TingTing.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE3251802D6E08110078A4E3 /* TingTingTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TingTingTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CE32518A2D6E08110078A4E3 /* TingTingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TingTingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE32519E2D6E0F110078A4E3 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -78,6 +79,7 @@
 				CE3251722D6E080E0078A4E3 /* TingTing */,
 				CE3251832D6E08110078A4E3 /* TingTingTests */,
 				CE32518D2D6E08110078A4E3 /* TingTingUITests */,
+				CE32519D2D6E0F100078A4E3 /* Frameworks */,
 				CE3251712D6E080E0078A4E3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -90,6 +92,14 @@
 				CE32518A2D6E08110078A4E3 /* TingTingUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		CE32519D2D6E0F100078A4E3 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				CE32519E2D6E0F110078A4E3 /* Metal.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -398,10 +408,11 @@
 				DEVELOPMENT_ASSET_PATHS = "\"TingTing/Preview Content\"";
 				DEVELOPMENT_TEAM = TB9MFLQJ6C;
 				ENABLE_PREVIEWS = YES;
+				"FRAMEWORK_SEARCH_PATHS[arch=*]" = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera is required for usage";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arkit;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -410,6 +421,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.giwoo.TingTing;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -429,10 +441,11 @@
 				DEVELOPMENT_ASSET_PATHS = "\"TingTing/Preview Content\"";
 				DEVELOPMENT_TEAM = TB9MFLQJ6C;
 				ENABLE_PREVIEWS = YES;
+				"FRAMEWORK_SEARCH_PATHS[arch=*]" = "";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera is required for usage";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = NO;
 				INFOPLIST_KEY_UIRequiredDeviceCapabilities = arkit;
 				INFOPLIST_KEY_UIStatusBarHidden = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -441,6 +454,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.giwoo.TingTing;
 				PRODUCT_NAME = "$(TARGET_NAME)";
