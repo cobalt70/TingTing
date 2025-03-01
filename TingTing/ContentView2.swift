@@ -4,52 +4,103 @@
 //
 //  Created by Gi Woo Kim on 2/25/25.
 //
-
+import Foundation
 import SwiftUI
 import RealityKit
 import ARKit
 import simd
 
-struct ContentView: View {
+struct ContentView2: View {
+    @EnvironmentObject var arViewModel: ARViewModel
     var body: some View {
-        ARViewContainer().edgesIgnoringSafeArea(.all)
-        
+        ZStack{
+            ARViewContainer()
+                .environmentObject(arViewModel)
+                .edgesIgnoringSafeArea(.all)
+            
+            Image(systemName: "viewfinder")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 120, height: 120)
+                .foregroundColor(.orange) // 주황색으로 설정
+                .allowsHitTesting(false)
+        }
+        .safeAreaInset(edge: .bottom){
+            
+            HStack{
+                Button(action: {
+                    if let arView = arViewModel.arView {
+                        loadModel(for: arView)
+                     
+                    }
+                    
+                }) {
+                    Text("ADD")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                        
+                }
+                .frame(maxWidth: .infinity ) //
+                Button(action: {
+                    if let arView = arViewModel.arView {
+                        var point : CGPoint = .zero
+                        point.x = UIScreen.main.bounds.midX
+                        point.y = UIScreen.main.bounds.midY
+                        
+                        findRaycastResult(for: arView, point: point)
+                        
+                    }
+                    print("삭제")
+                        
+                }) {
+                    Text("Delete")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                        
+                }
+                .frame(maxWidth: .infinity ) //
+            }
+        }.padding(.bottom, 0)
+            .background(Color.clear)
     }
+    
 }
 
 struct ARViewContainer: UIViewRepresentable {
-    
-    @StateObject private var targetPoint = RealPoint(position: SIMD3<Float>(0.0, 0.0, 0.0))
+    @EnvironmentObject var arViewModel: ARViewModel
   
-    @State private var arView :   ARView?
-
+    var targetPoint = SIMD3<Float>(0.0, 0.0, 0.0)
+    
     class Coordinator: NSObject, ARSessionDelegate {
-        
         var parent: ARViewContainer
-        
+        var arView : ARView?
         init(parent: ARViewContainer) {
             self.parent = parent
         }
         func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
             print("session anchor didupdate")
         }
-     
+        
+        
         func session(_ session: ARSession, didUpdate frame: ARFrame) {
-            // 실시간으로 카메라 위치 업데이트
             print("session frame didupdate")
             updateRealPointPosition(frame: frame)
+            
+            
         }
-        
-        // 카메라 위치 업데이트
         
         func updateRealPointPosition(frame: ARFrame) {
-            
-            let arview = parent.arView
             let cameraTransform = frame.camera.transform
-            parent.targetPoint.position = SIMD3<Float>(cameraTransform.columns.3.x, cameraTransform.columns.3.y, cameraTransform.columns.3.z)
-           
-            print("target :", parent.targetPoint.position ?? SIMD3<Float> (-1,-1,-1))
+            parent.targetPoint = SIMD3<Float>(cameraTransform.columns.3.x, cameraTransform.columns.3.y, cameraTransform.columns.3.z)
+            print("target:", parent.targetPoint)
         }
+        
         
         func session(_ session: ARSession, didFailWithError error: Error) {
             print("Session failed: \(error.localizedDescription)")
@@ -80,24 +131,35 @@ struct ARViewContainer: UIViewRepresentable {
     }
     
     func makeUIView(context: Context) -> ARView {
-        let arView = ARView(frame: .zero)
-        DispatchQueue.main.async {
-            self.arView = arView
-            let configuration = ARWorldTrackingConfiguration()
-                    configuration.planeDetection = [.horizontal, .vertical]
-            arView.session.delegate = context.coordinator
-            print("\(Date()) makeUIVIew")
-        }
-        return arView
+        setupARView()
+        context.coordinator.arView = arViewModel.arView
+       
+       // ARViewContainer.arView = arView
+        print("\(Date()) makeUIVIew")
+        return arViewModel.arView!
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
+        if let parentView = uiView.superview {
+            if let arView = context.coordinator.arView {
+                arView.frame = parentView.bounds
+            }
+        }
         print("\(Date()) updateUIView")
+        
+    }
+    private func setupARView() {
+ 
+        
+        let configuration = ARWorldTrackingConfiguration()
+        configuration.planeDetection = [.horizontal, .vertical]
+        arViewModel.arView?.session.run(configuration)
+     
     }
 }
 
 
 
 #Preview {
-    ContentView()
+    ContentView2()
 }

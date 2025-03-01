@@ -5,18 +5,21 @@
 //  Created by Gi Woo Kim on 2/25/25.
 //
 
-import UIKit
+
 import SwiftUI
 import ARKit
 
 @main
-struct YourApp: App {
+struct TingTingApp: App {
+  
     @StateObject private var arViewModel = ARViewModel() // 앱 진입점에서 초기화
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(arViewModel) // 최상위 뷰에서 environmentObject로 설정
+//            ContentView()
+//                .environmentObject(arViewModel) // 최상위 뷰에서 environmentObject로 설정
+            ContentView2()
+                .environmentObject(arViewModel) 
         }
     }
 }
