@@ -4,14 +4,20 @@
 //
 //  Created by Gi Woo Kim on 2/25/25.
 //
+import Combine
 import Foundation
 import SwiftUI
 import RealityKit
 import ARKit
 import simd
 
+
 struct ContentView2: View {
     @EnvironmentObject var arViewModel: ARViewModel
+    @StateObject private var btnViewModel = ButtonViewModel()
+//    @State private var startCompleted: Bool = false
+//    @State private var endCompleted: Bool = false
+//    @State private var canScan: Bool = false
     var body: some View {
         ZStack{
             ARViewContainer()
@@ -21,7 +27,7 @@ struct ContentView2: View {
             Image(systemName: "viewfinder")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 120, height: 120)
+                .frame(width: 50, height: 50)
                 .foregroundColor(.orange) // 주황색으로 설정
                 .allowsHitTesting(false)
         }
@@ -29,42 +35,79 @@ struct ContentView2: View {
             
             HStack{
                 Button(action: {
-                    if let arView = arViewModel.arView {
-                        loadModel(for: arView)
-                     
+                    guard let arView = arViewModel.arView else {
+                        return
                     }
+                    btnViewModel.startCompleted = true
+                    loadModel(for: arView )
+                }) {
+                    Text("Start")
+                        .font(.caption)
+                        .padding()
+                        .background(btnViewModel.startCompleted ? Color.gray : Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .disabled(btnViewModel.startCompleted)  // Start 버튼은 이미 시작되면 비활성화
+                
+                // End 버튼
+                Button(action: {
+                    guard let arView = arViewModel.arView else {
+                        return
+                    }
+                    btnViewModel.endCompleted = true
+            
+                }) {
+                    Text("End")
+                        .font(.caption)
+                        .padding()
+                        .background(btnViewModel.endCompleted ? Color.gray : Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .disabled(btnViewModel.endCompleted)  // End 버튼은 이미 종료되면 비활성화
+                
+                // Scan 버튼
+                Button(action: {
+                    print("Scanning...")
+                    // 여기에 실제 스캔 작업 로직을 넣습니다.
+                    guard let arView = arViewModel.arView else {
+                        return
+                    }
+                }) {
+                    Text("Scan")
+                        .font(.caption)
+                        .padding()
+                        .background(btnViewModel.canScan ? Color.blue : Color.gray)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .disabled(!btnViewModel.canScan)  // Scan 버튼은 Start와 End가 모두 완료되었을 때만 활성화
+                
+                // Reset 버튼
+                Button(action: {
+                    btnViewModel.reset()
+                    guard let arView = arViewModel.arView else {
+                        return
+                    }
+                  
+                    var point : CGPoint = .zero
+                    point.x = UIScreen.main.bounds.midX
+                    point.y = UIScreen.main.bounds.midY
+                    
+                    findRaycastResult(for: arView, point: point)
+                    
+                    print("Reset")
+                    
                     
                 }) {
-                    Text("ADD")
+                    Text("Reset")
                         .font(.caption)
-                        .foregroundColor(.white)
                         .padding()
-                        .background(Color.blue)
-                        .cornerRadius(10)
-                        
-                }
-                .frame(maxWidth: .infinity ) //
-                Button(action: {
-                    if let arView = arViewModel.arView {
-                        var point : CGPoint = .zero
-                        point.x = UIScreen.main.bounds.midX
-                        point.y = UIScreen.main.bounds.midY
-                        
-                        findRaycastResult(for: arView, point: point)
-                        
-                    }
-                    print("삭제")
-                        
-                }) {
-                    Text("Delete")
-                        .font(.caption)
+                        .background(Color.orange)
                         .foregroundColor(.white)
-                        .padding()
-                        .background(Color.blue)
                         .cornerRadius(10)
-                        
-                }
-                .frame(maxWidth: .infinity ) //
+                } //
             }
         }.padding(.bottom, 0)
             .background(Color.clear)
@@ -74,7 +117,7 @@ struct ContentView2: View {
 
 struct ARViewContainer: UIViewRepresentable {
     @EnvironmentObject var arViewModel: ARViewModel
-  
+    
     var targetPoint = SIMD3<Float>(0.0, 0.0, 0.0)
     
     class Coordinator: NSObject, ARSessionDelegate {
@@ -133,8 +176,8 @@ struct ARViewContainer: UIViewRepresentable {
     func makeUIView(context: Context) -> ARView {
         setupARView()
         context.coordinator.arView = arViewModel.arView
-       
-       // ARViewContainer.arView = arView
+        
+        // ARViewContainer.arView = arView
         print("\(Date()) makeUIVIew")
         return arViewModel.arView!
     }
@@ -149,15 +192,44 @@ struct ARViewContainer: UIViewRepresentable {
         
     }
     private func setupARView() {
- 
+        
         
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = [.horizontal, .vertical]
         arViewModel.arView?.session.run(configuration)
-     
+        
     }
 }
 
+
+class ButtonViewModel: ObservableObject {
+    @Published var startCompleted: Bool = false
+    @Published var endCompleted: Bool = false
+    
+    // Combine을 사용하여 상태 변화 처리
+    var cancellables: Set<AnyCancellable> = []
+    
+    init() {
+        // startCompleted 또는 endCompleted가 변경될 때마다 canScan 상태 업데이트
+        $startCompleted
+            .combineLatest($endCompleted)
+            .map { start, end in
+                return start && end  // 둘 다 true일 때만 true
+            }
+            .sink { [weak self] canScan in
+                self?.canScan = canScan
+            }
+            .store(in: &cancellables)
+    }
+    
+    var canScan: Bool = false  // Scan 가능 여부
+    
+    // Reset 버튼을 눌렀을 때 상태 초기화
+    func reset() {
+        startCompleted = false
+        endCompleted = false
+    }
+}
 
 
 #Preview {

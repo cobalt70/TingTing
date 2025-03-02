@@ -12,6 +12,7 @@ import simd
 
 struct ContentView: View {
     @EnvironmentObject var arViewModel: ARViewModel
+ 
     var body: some View{
         ZStack{
             ARViewControllerRepresentable()
@@ -20,16 +21,17 @@ struct ContentView: View {
             Image(systemName: "viewfinder")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 100, height: 100)
+                            .frame(width: 50, height: 50)
                             .foregroundColor(.orange) // 주황색으로 설정
                             .allowsHitTesting(false)
+                            .scaleEffect(x: 0.5, y: 1.0) 
         }
         .safeAreaInset(edge: .bottom){
             HStack{
                 Button(action: {
 //                    loadModel(for: ARViewController.shared.arView)
                     if let arView = arViewModel.arView {
-                        loadModel(for: arView)
+                        loadModel(for: arView )
                     }
                     
                  

@@ -18,16 +18,16 @@ public class point3DSIMD: ObservableObject {
 
 
 struct Point3D {
-    var x: Double
-    var y: Double
-    var z: Double
+    var x: Float
+    var y: Float
+    var z: Float
 }
 
 func dottedLine3D(from start: Point3D, to end: Point3D, numPoints: Int) -> [Point3D] {
     guard numPoints > 1 else { return [start, end] } // 최소 두 개의 점이 필요
     
     // 내부 함수: 두 점을 보간하여 중간 점을 계산
-    func interpolate(t: Double) -> Point3D {
+    func interpolate(t: Float) -> Point3D {
         return Point3D(
             x: start.x + t * (end.x - start.x),
             y: start.y + t * (end.y - start.y),
@@ -36,7 +36,7 @@ func dottedLine3D(from start: Point3D, to end: Point3D, numPoints: Int) -> [Poin
     }
 
     return (0..<numPoints).map { i in
-        let t = Double(i) / Double(numPoints - 1) // 보간 비율 (0 ~ 1 사이)
+        let t = Float(i) / Float(numPoints - 1) // 보간 비율 (0 ~ 1 사이)
         return interpolate(t: t)
     }
 }

@@ -7,9 +7,11 @@
 import SwiftUI
 import RealityKit
 
+@Observable
 class ARViewModel: ObservableObject {
-    @Published var arView: ARView?
-
+    var arView: ARView?
+    var tileGrid : TileGrid?
+    var tileGridOn: Bool = false
     init() {
         self.arView = ARView(frame: .zero)
     }
