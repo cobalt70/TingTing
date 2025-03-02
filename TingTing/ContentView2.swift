@@ -13,11 +13,11 @@ import simd
 
 
 struct ContentView2: View {
-    @EnvironmentObject var arViewModel: ARViewModel
+    @StateObject var arViewModel: ARViewModel = ARViewModel()
     @StateObject private var btnViewModel = ButtonViewModel()
-//    @State private var startCompleted: Bool = false
-//    @State private var endCompleted: Bool = false
-//    @State private var canScan: Bool = false
+    //    @State private var startCompleted: Bool = false
+    //    @State private var endCompleted: Bool = false
+    //    @State private var canScan: Bool = false
     var body: some View {
         ZStack{
             ARViewContainer()
@@ -30,6 +30,8 @@ struct ContentView2: View {
                 .frame(width: 50, height: 50)
                 .foregroundColor(.orange) // 주황색으로 설정
                 .allowsHitTesting(false)
+            
+            
         }
         .safeAreaInset(edge: .bottom){
             
@@ -39,7 +41,10 @@ struct ContentView2: View {
                         return
                     }
                     btnViewModel.startCompleted = true
+                    startSetup(arViewModel: arViewModel)
                     loadModel(for: arView )
+                    
+                    
                 }) {
                     Text("Start")
                         .font(.caption)
@@ -55,8 +60,10 @@ struct ContentView2: View {
                     guard let arView = arViewModel.arView else {
                         return
                     }
+                    endSetup(arViewModel: arViewModel)
+                    loadModel(for: arView )
                     btnViewModel.endCompleted = true
-            
+                    
                 }) {
                     Text("End")
                         .font(.caption)
@@ -65,7 +72,7 @@ struct ContentView2: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                .disabled(btnViewModel.endCompleted)  // End 버튼은 이미 종료되면 비활성화
+                .disabled(btnViewModel.endCompleted || !btnViewModel.startCompleted)  // End 버튼은 이미 종료되면 비활성화
                 
                 // Scan 버튼
                 Button(action: {
@@ -74,6 +81,8 @@ struct ContentView2: View {
                     guard let arView = arViewModel.arView else {
                         return
                     }
+                    scanPlane(arViewModel: arViewModel)
+                    print("tileGrid \(String(describing: arViewModel.tileGrid?.tiles))")
                 }) {
                     Text("Scan")
                         .font(.caption)
@@ -90,7 +99,7 @@ struct ContentView2: View {
                     guard let arView = arViewModel.arView else {
                         return
                     }
-                  
+                    removeAnchorWithName(for: arView, name: "spherePlane")
                     var point : CGPoint = .zero
                     point.x = UIScreen.main.bounds.midX
                     point.y = UIScreen.main.bounds.midY
@@ -117,12 +126,12 @@ struct ContentView2: View {
 
 struct ARViewContainer: UIViewRepresentable {
     @EnvironmentObject var arViewModel: ARViewModel
-    
-    var targetPoint = SIMD3<Float>(0.0, 0.0, 0.0)
+    static var isUpdatingScreen: Bool = false
     
     class Coordinator: NSObject, ARSessionDelegate {
         var parent: ARViewContainer
         var arView : ARView?
+        
         init(parent: ARViewContainer) {
             self.parent = parent
         }
@@ -133,17 +142,9 @@ struct ARViewContainer: UIViewRepresentable {
         
         func session(_ session: ARSession, didUpdate frame: ARFrame) {
             print("session frame didupdate")
-            updateRealPointPosition(frame: frame)
-            
-            
+            parent.arViewModel.requestRaycastUpdate()
+           
         }
-        
-        func updateRealPointPosition(frame: ARFrame) {
-            let cameraTransform = frame.camera.transform
-            parent.targetPoint = SIMD3<Float>(cameraTransform.columns.3.x, cameraTransform.columns.3.y, cameraTransform.columns.3.z)
-            print("target:", parent.targetPoint)
-        }
-        
         
         func session(_ session: ARSession, didFailWithError error: Error) {
             print("Session failed: \(error.localizedDescription)")
@@ -176,28 +177,39 @@ struct ARViewContainer: UIViewRepresentable {
     func makeUIView(context: Context) -> ARView {
         setupARView()
         context.coordinator.arView = arViewModel.arView
-        
-        // ARViewContainer.arView = arView
+        arViewModel.arView?.session.delegate = context.coordinator
         print("\(Date()) makeUIVIew")
         return arViewModel.arView!
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
+//        guard !ARViewContainer.isUpdatingScreen else {return}
+//        DispatchQueue.main.async {
+//            ARViewContainer.isUpdatingScreen = true
+//        }
+        
         if let parentView = uiView.superview {
             if let arView = context.coordinator.arView {
                 arView.frame = parentView.bounds
             }
         }
+        
+        let arView = arViewModel.arView!
+        removeAnchorWithName(for: arView, name: "CenterImageAnchor")
+        loadModel(for: arView, name: "CenterImageAnchor")
+        
         print("\(Date()) updateUIView")
+//        DispatchQueue.main.async {
+//            ARViewContainer.isUpdatingScreen = false
+//        }
         
     }
+    
+    
     private func setupARView() {
-        
-        
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = [.horizontal, .vertical]
         arViewModel.arView?.session.run(configuration)
-        
     }
 }
 
@@ -228,6 +240,7 @@ class ButtonViewModel: ObservableObject {
     func reset() {
         startCompleted = false
         endCompleted = false
+        
     }
 }
 

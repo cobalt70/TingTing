@@ -11,7 +11,7 @@ import ARKit
 import simd
 
 struct ContentView: View {
-    @EnvironmentObject var arViewModel: ARViewModel
+    @StateObject var arViewModel: ARViewModel = ARViewModel()
  
     var body: some View{
         ZStack{
@@ -29,7 +29,7 @@ struct ContentView: View {
         .safeAreaInset(edge: .bottom){
             HStack{
                 Button(action: {
-//                    loadModel(for: ARViewController.shared.arView)
+
                     if let arView = arViewModel.arView {
                         loadModel(for: arView )
                     }

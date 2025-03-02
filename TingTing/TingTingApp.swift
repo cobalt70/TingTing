@@ -28,13 +28,14 @@ import ARKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
  
     var window: UIWindow?
-    private var arViewModel = ARViewModel()
+ //   private var arViewModel = ARViewModel()
 //    var arSession: ARSession?
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 
         // Create the SwiftUI view that provides the window contents.
-        let contentView =   ContentView2().environmentObject(arViewModel)
+        let contentView =   ContentView2()
+            //.environmentObject(arViewModel)
 
         // Use a UIHostingController as window root view controller.
         let window = UIWindow(frame: UIScreen.main.bounds)

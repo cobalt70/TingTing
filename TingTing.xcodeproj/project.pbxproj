@@ -35,9 +35,22 @@
 		CEAA98CE2D7095E000B73B6F /* xcschememanagement.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = xcschememanagement.plist; path = TingTing.xcodeproj/xcuserdata/giwookim.xcuserdatad/xcschemes/xcschememanagement.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CEB514502D74732A00085A48 /* Exceptions for "TingTing" folder in "TingTing" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"Preview Content/Scene.usdz",
+			);
+			target = CE32516F2D6E080E0078A4E3 /* TingTing */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CE3251722D6E080E0078A4E3 /* TingTing */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CEB514502D74732A00085A48 /* Exceptions for "TingTing" folder in "TingTing" target */,
+			);
 			path = TingTing;
 			sourceTree = "<group>";
 		};

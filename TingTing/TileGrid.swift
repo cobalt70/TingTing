@@ -6,18 +6,20 @@
 //
 
 import simd
-
 import SwiftUI
 
 
 /// 개별 타일을 나타내는 구조체
 struct Tile {
+    
     var topLeft: simd_float3
     var topRight: simd_float3
-    var bottomLeft: simd_float3
     var bottomRight: simd_float3
+    var bottomLeft: simd_float3
+ 
     var center: simd_float3
     var normalVector: simd_float3
+    
     var row: Int
     var col: Int
   
@@ -33,13 +35,15 @@ class TileGrid  {
     
     var tileWidth: Float  = 0.3 // 타일의 가로 길이
     var tileHeight: Float = 0.3 // 타일의 세로 길이
-    var padding: Float    = 0.01// 타일 간 간격
+    var padding: Float    = 0.02// 타일 간 간격
+    var extraRows: Int = 2
     
     var startPoint: simd_float3?
     var endPoint: simd_float3?
+  
     var isLineCompleted: Bool = false
     
-    var fixedY: Float = 0.1  // 모든 타일의 y값 고정
+    var fixedY: Float = -0.5 // 모든 타일의 y값 고정
     
     var n1 : simd_float3?
     var n2 : simd_float3?
@@ -48,7 +52,33 @@ class TileGrid  {
     
     var tiles: [[Tile]] = []
     
+    init() {
+        
+        }
     init(totalRows: Int, totalCols: Int,centerCol : Int,  tileWidth: Float, tileHeight: Float, padding: Float, fixedY: Float, startPoint: simd_float3, endPoint: simd_float3) {
+        self.totalRows = totalRows
+        self.totalCols = totalCols
+        self.centerCol = centerCol
+        
+        self.tileWidth = tileWidth
+        self.tileHeight = tileHeight
+        self.padding = padding
+        self.startPoint = startPoint
+        self.endPoint = endPoint
+        self.fixedY = max(startPoint.y , endPoint.y ) + 0.05
+        
+        self.startPoint?.y = fixedY
+        self.endPoint?.y = fixedY
+        
+        if let n1 = calculateUnitVector(from: startPoint, to: endPoint , fixedY: fixedY) {
+            self.n1 = n1
+            self.n2 = rotate90DegreesAroundOrigin(n1)
+            self.n3 = simd_float3(0, 1, 0)
+        }
+        
+        self.tiles = generateTiles()
+    }
+    func updateGrid(totalRows: Int, totalCols: Int, centerCol: Int, tileWidth: Float, tileHeight: Float, padding: Float, fixedY: Float, startPoint: simd_float3, endPoint: simd_float3) {
         self.totalRows = totalRows
         self.totalCols = totalCols
         self.centerCol = centerCol
@@ -62,15 +92,18 @@ class TileGrid  {
         
         self.startPoint?.y = fixedY
         self.endPoint?.y = fixedY
-        
-        if let n1 = calculateUnitVector(from: startPoint, to: endPoint , fixedY: fixedY) {
+        self.isLineCompleted = true
+        self.tiles = [[]]
+        if let n1 = calculateUnitVector(from: startPoint, to: endPoint, fixedY: fixedY) {
             self.n1 = n1
             self.n2 = rotate90DegreesAroundOrigin(n1)
+            self.n3 = simd_float3(0, 1, 0)
         }
         
         self.tiles = generateTiles()
+     
     }
-    
+
     // 두 점을 입력받아 Y 값을 고정하고, 단위 벡터를 계산하는 함수
     func calculateUnitVector(from startPoint: simd_float3, to endPoint: simd_float3, fixedY: Float) -> simd_float3? {
         // Y값 고정하고, X, Z 평면에서만 벡터 차이 계산
@@ -96,7 +129,7 @@ class TileGrid  {
     }
     
     /// 90도 반시계 방향 회전 (X-Z 평면 기준)
-    func rotate90DegreesAroundOrigin(_ vector: simd_float3) -> simd_float3 {
+    func rotate90DegreesAroundOrigin( _ vector: simd_float3) -> simd_float3 {
         let rotationMatrix = simd_float3x3(
             simd_float3(0,  0, -1), // X' = -Z
             simd_float3(0,  1,  0), // Y' = Y (변화 없음)
@@ -146,7 +179,7 @@ class TileGrid  {
                 // 타일 생성
                 let tile = Tile(
                     topLeft: topLeft, topRight: topRight,
-                    bottomLeft: bottomLeft, bottomRight: bottomRight,
+                    bottomRight: bottomRight, bottomLeft: bottomLeft,
                     center: center, normalVector: normalVector,
                     row: row, col: col
                 )
@@ -166,7 +199,7 @@ class TileGrid  {
         guard row >= 0, row < totalRows, col >= 0, col < totalCols else {
             return nil // 범위를 벗어나면 nil 반환
         }
-        return tiles[row][col]
+        return tiles[col][row]
     }
 }
 
