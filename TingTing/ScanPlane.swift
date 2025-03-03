@@ -9,20 +9,21 @@ import SwiftUI
 import ARKit
 
 func scanPlane(arViewModel :ARViewModel ) {
-    guard let tileGrid = arViewModel.tileGrid else {
+    guard let tileGrid = arViewModel.tileGrid, let startPoint = tileGrid.startPoint, let endPoint = tileGrid.endPoint else {
         return
     }
-    let distance = distance(tileGrid.startPoint! ,tileGrid.endPoint!)
+    
+    
+    let distance = distance(startPoint ,endPoint)
     let totalRows = Int((distance + (tileGrid.tileHeight)/2) / tileGrid.tileWidth ) + tileGrid.extraRows
     let totalCols = Int(Double(totalRows) * 0.1) * 2 + 1 // tile이 row == 10 > col ==3
     let centerCol = Int(totalCols / 2) // index starts friom = 0
     let tileWidth  = 0.3 // 타일의 가로 길이
     let tileHeight = 0.3 // 타일의 세로 길이
-    let padding = 0.01
+    let padding = 0.05
     let isLineCompleted = true
     
-    let startPoint = tileGrid.startPoint!
-    let endPoint = tileGrid.endPoint!
+ 
     let fixedY = max(startPoint.y, endPoint.y) + 0.01
     //    guard let n1 = tileGrid.calculateUnitVector(from: startPoint, to: endPoint, fixedY: Float(fixedY)) else {return}
     //    let n2 = tileGrid.rotate90DegreesAroundOrigin(n1)
@@ -52,18 +53,21 @@ func scanPlane(arViewModel :ARViewModel ) {
 }
 
 
-// 4개의 점을 받아서 사각형 평면을 생성하는 함수
+//4개로 했다가 센터도 추가 5개의 점을 받아서 사각형 평면을 생성하는 함수
 func createPlane(from points: [SIMD3<Float>]) async -> ModelEntity? {
     guard points.count == 5 else { return nil }
     // 평면을 생성하는 ModelEntity (이전 로직에서 확장 가능)
     let planeEntity = await ModelEntity()
     
     // 1cm 크기의 노란색 점(구) 생성
-    let sphereMesh = await MeshResource.generateSphere(radius: 0.005)
+    let sphereMesh = await MeshResource.generateSphere(radius: 0.01)
   
     for point in points {
         let sphereEntity = await ModelEntity(mesh: sphereMesh)
+     
         DispatchQueue.main.async{
+            let material = SimpleMaterial(color: .yellow, roughness: 0.1, isMetallic: true)
+            sphereEntity.model =  ModelComponent(mesh: sphereMesh, materials: [material])
             sphereEntity.position = point
             sphereEntity.name = "sphere"
             
@@ -120,18 +124,21 @@ func loadModel(for arView: ARView, name : String = "") {
 }
 
 func removeAnchorWithName(for arView: ARView, name: String) {
-    // name이 비어있지 않다면
-    if !name.isEmpty {
-        // anchors 배열을 순회하며 조건에 맞는 앵커를 제거
-        for anchor in arView.scene.anchors {
-            print("anchor.name \(anchor.name) \(arView.scene.anchors)")
-            if anchor.name.contains(name) {
-                print("deleted anchor \(anchor.name)")
-                arView.scene.removeAnchor(anchor) // 앵커 제거
-                // 이름이 맞는 앵커를 찾았으면 루프 종료
-            }
+    var i = 0
+    for anchor in arView.scene.anchors {
+        if anchor.name == name {
+            
+            print("\(i) deleted anchor \(anchor.name)")
+            arView.scene.removeAnchor(anchor) // 앵커 제거
+            print("앵커 제거됨: \(anchor.name) ")
+            // 이름이 맞는 앵커를 찾았으면 루프 종료
+            i += 1
         }
     }
+    for anchor in arView.scene.anchors {
+           print("현재 앵커 목록: \(anchor.name )")
+       }
+    
 }
 
 func startSetup(arViewModel: ARViewModel) {

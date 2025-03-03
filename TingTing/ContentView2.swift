@@ -15,9 +15,8 @@ import simd
 struct ContentView2: View {
     @StateObject var arViewModel: ARViewModel = ARViewModel()
     @StateObject private var btnViewModel = ButtonViewModel()
-    //    @State private var startCompleted: Bool = false
-    //    @State private var endCompleted: Bool = false
-    //    @State private var canScan: Bool = false
+    
+   
     var body: some View {
         ZStack{
             ARViewContainer()
@@ -82,6 +81,7 @@ struct ContentView2: View {
                         return
                     }
                     scanPlane(arViewModel: arViewModel)
+                    btnViewModel.scanCompleted = true
                     print("tileGrid \(String(describing: arViewModel.tileGrid?.tiles))")
                 }) {
                     Text("Scan")
@@ -91,7 +91,7 @@ struct ContentView2: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                .disabled(!btnViewModel.canScan)  // Scan 버튼은 Start와 End가 모두 완료되었을 때만 활성화
+                .disabled(!btnViewModel.canScan && btnViewModel.scanCompleted )  // Scan 버튼은 Start와 End가 모두 완료되었을 때만 활성화
                 
                 // Reset 버튼
                 Button(action: {
@@ -99,6 +99,7 @@ struct ContentView2: View {
                     guard let arView = arViewModel.arView else {
                         return
                     }
+                   
                     removeAnchorWithName(for: arView, name: "spherePlane")
                     var point : CGPoint = .zero
                     point.x = UIScreen.main.bounds.midX
@@ -126,6 +127,8 @@ struct ContentView2: View {
 
 struct ARViewContainer: UIViewRepresentable {
     @EnvironmentObject var arViewModel: ARViewModel
+    private var updateSubscription: Cancellable?
+  
     static var isUpdatingScreen: Bool = false
     
     class Coordinator: NSObject, ARSessionDelegate {
@@ -134,6 +137,7 @@ struct ARViewContainer: UIViewRepresentable {
         
         init(parent: ARViewContainer) {
             self.parent = parent
+            self.arView = parent.arViewModel.arView
         }
         func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
             print("session anchor didupdate")
@@ -142,7 +146,11 @@ struct ARViewContainer: UIViewRepresentable {
         
         func session(_ session: ARSession, didUpdate frame: ARFrame) {
             print("session frame didupdate")
-            parent.arViewModel.requestRaycastUpdate()
+            if parent.canPerformRaycast() {
+                print("raycast activated ")
+                parent.arViewModel.requestRaycastUpdate()
+            }
+        
            
         }
         
@@ -178,7 +186,7 @@ struct ARViewContainer: UIViewRepresentable {
         setupARView()
         context.coordinator.arView = arViewModel.arView
         arViewModel.arView?.session.delegate = context.coordinator
-        print("\(Date()) makeUIVIew")
+
         return arViewModel.arView!
     }
     
@@ -194,10 +202,10 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
         
-        let arView = arViewModel.arView!
-        removeAnchorWithName(for: arView, name: "CenterImageAnchor")
-        loadModel(for: arView, name: "CenterImageAnchor")
-        
+//        let arView = arViewModel.arView!
+//        removeAnchorWithName(for: arView, name: "CenterImageAnchor")
+//        loadModel(for: arView, name: "CenterImageAnchor")
+//        
         print("\(Date()) updateUIView")
 //        DispatchQueue.main.async {
 //            ARViewContainer.isUpdatingScreen = false
@@ -211,36 +219,58 @@ struct ARViewContainer: UIViewRepresentable {
         configuration.planeDetection = [.horizontal, .vertical]
         arViewModel.arView?.session.run(configuration)
     }
+    
+    func canPerformRaycast() -> Bool {
+        guard let currentFrame = arViewModel.arView?.session.currentFrame else {
+            print("Camera not ready")
+            return false
+        }
+        if currentFrame.camera.trackingState == .normal    {
+            print("Camera activated")
+            return true
+        }
+        print("Camera not activated")
+        return false
+    }
 }
 
 
 class ButtonViewModel: ObservableObject {
     @Published var startCompleted: Bool = false
     @Published var endCompleted: Bool = false
-    
+    @Published var scanCompleted: Bool = false
+    @Published var canScan: Bool = false
     // Combine을 사용하여 상태 변화 처리
     var cancellables: Set<AnyCancellable> = []
     
     init() {
         // startCompleted 또는 endCompleted가 변경될 때마다 canScan 상태 업데이트
+        //$canScan // Publisher로 사용
+        //         &$canScan // Binding을 사용하여 값을 쓸 수 있음
+        // 같은 결과이지만 다른 표현이고 sink는 Cancellable객체를 반환함
+        //        .sink { [weak self] canScan in
+        //                self?.canScan = canScan
+        //            }
+        //            .store(in: &cancellables)  // 구독을 저장
+        //        assign(to:) 메서드는 반환값이 없고, 구독을 멈출 수 있는 방법도 없음
+        //assign(to:)는 단순히 값을 할당하는 방식으로 동작하기 때문에,
+        //구독을 취소하거나 제어할 수 있는 Cancellable이없음
+        
         $startCompleted
             .combineLatest($endCompleted)
             .map { start, end in
                 return start && end  // 둘 다 true일 때만 true
             }
-            .sink { [weak self] canScan in
-                self?.canScan = canScan
-            }
-            .store(in: &cancellables)
+            .assign(to: &$canScan)
     }
     
-    var canScan: Bool = false  // Scan 가능 여부
-    
+ 
     // Reset 버튼을 눌렀을 때 상태 초기화
     func reset() {
         startCompleted = false
         endCompleted = false
-        
+        scanCompleted = false
+       
     }
 }
 
