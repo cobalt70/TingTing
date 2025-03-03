@@ -129,6 +129,9 @@ func removeAnchorWithName(for arView: ARView, name: String) {
         if anchor.name == name {
             
             print("\(i) deleted anchor \(anchor.name)")
+            if let modelEntity = anchor.children.first(where: { $0 is ModelEntity }) as? ModelEntity {
+                removeModelEntityAndChildren(modelEntity)
+                       }
             arView.scene.removeAnchor(anchor) // 앵커 제거
             print("앵커 제거됨: \(anchor.name) ")
             // 이름이 맞는 앵커를 찾았으면 루프 종료
@@ -139,6 +142,18 @@ func removeAnchorWithName(for arView: ARView, name: String) {
            print("현재 앵커 목록: \(anchor.name )")
        }
     
+}
+
+func removeModelEntityAndChildren(_ modelEntity: ModelEntity) {
+    // 모델 엔티티의 자식들이 있다면 모두 제거
+    for child in modelEntity.children {
+        // 자식 객체를 재귀적으로 제거
+        removeModelEntityAndChildren(child as! ModelEntity) // 자식도 같은 방식으로 처리
+    }
+
+    // 자식 제거 후 모델 엔티티를 부모로부터 제거
+    modelEntity.removeFromParent()
+    print("모델 엔티티 및 자식들이 제거됨: \(modelEntity.name )")
 }
 
 func startSetup(arViewModel: ARViewModel) {
