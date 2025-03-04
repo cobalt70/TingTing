@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE73660C2D7755F500D4536A /* FocusEntity in Frameworks */ = {isa = PBXBuildFile; productRef = CE73660B2D7755F500D4536A /* FocusEntity */; };
 		CEAA98E22D7098B300B73B6F /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CE32519E2D6E0F110078A4E3 /* Metal.framework */; };
 /* End PBXBuildFile section */
 
@@ -36,10 +37,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		CEB514502D74732A00085A48 /* Exceptions for "TingTing" folder in "TingTing" target */ = {
+		CE7366112D77616300D4536A /* Exceptions for "TingTing" folder in "TingTing" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				"Preview Content/Scene.usdz",
+				"Preview Content/Close.png",
+				"Preview Content/Open.png",
 			);
 			target = CE32516F2D6E080E0078A4E3 /* TingTing */;
 		};
@@ -49,7 +51,7 @@
 		CE3251722D6E080E0078A4E3 /* TingTing */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				CEB514502D74732A00085A48 /* Exceptions for "TingTing" folder in "TingTing" target */,
+				CE7366112D77616300D4536A /* Exceptions for "TingTing" folder in "TingTing" target */,
 			);
 			path = TingTing;
 			sourceTree = "<group>";
@@ -71,6 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE73660C2D7755F500D4536A /* FocusEntity in Frameworks */,
 				CEAA98E22D7098B300B73B6F /* Metal.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -142,6 +145,7 @@
 			);
 			name = TingTing;
 			packageProductDependencies = (
+				CE73660B2D7755F500D4536A /* FocusEntity */,
 			);
 			productName = TingTing;
 			productReference = CE3251702D6E080E0078A4E3 /* TingTing.app */;
@@ -225,6 +229,9 @@
 			);
 			mainGroup = CE3251672D6E080E0078A4E3;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CEAAA42F2D77528700F84C46 /* XCRemoteSwiftPackageReference "FocusEntity" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CE3251712D6E080E0078A4E3 /* Products */;
 			projectDirPath = "";
@@ -598,6 +605,24 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CEAAA42F2D77528700F84C46 /* XCRemoteSwiftPackageReference "FocusEntity" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/maxxfrazer/FocusEntity.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CE73660B2D7755F500D4536A /* FocusEntity */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FocusEntity;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE3251682D6E080E0078A4E3 /* Project object */;
 }

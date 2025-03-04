@@ -175,7 +175,7 @@ class ARViewController: UIViewController, ARSessionDelegate {
         
         
         let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = [.horizontal, .vertical]
+        configuration.planeDetection = []
         arView.session.run(configuration)
     }
 }

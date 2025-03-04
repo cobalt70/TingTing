@@ -10,7 +10,7 @@ import SwiftUI
 import RealityKit
 import ARKit
 import simd
-
+import FocusEntity
 
 struct ContentView2: View {
     @StateObject var arViewModel: ARViewModel = ARViewModel()
@@ -29,7 +29,7 @@ struct ContentView2: View {
                 .frame(width: 50, height: 50)
                 .foregroundColor(.orange) // 주황색으로 설정
                 .allowsHitTesting(false)
-            
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             
         }
         .safeAreaInset(edge: .bottom){
@@ -41,7 +41,7 @@ struct ContentView2: View {
                     }
                     btnViewModel.startCompleted = true
                     startSetup(arViewModel: arViewModel)
-                    loadModel(for: arView )
+                    loadModel(for: arView  , name : "scull.usdz")
                     
                     
                 }) {
@@ -52,7 +52,8 @@ struct ContentView2: View {
                         .foregroundColor(.white)
                         .cornerRadius(10)
                 }
-                .disabled(btnViewModel.startCompleted)  // Start 버튼은 이미 시작되면 비활성화
+                .disabled(btnViewModel.startCompleted && btnViewModel.endCompleted)  // Start 버튼은 이미 시작되면 비활성화
+                //End 버튼이 완료 안됬으면 스타트틑 계속 누르자
                 
                 // End 버튼
                 Button(action: {
@@ -60,7 +61,7 @@ struct ContentView2: View {
                         return
                     }
                     endSetup(arViewModel: arViewModel)
-                    loadModel(for: arView )
+                    loadModel(for: arView  , name : "scull.usdz")
                     btnViewModel.endCompleted = true
                     
                 }) {
@@ -77,7 +78,7 @@ struct ContentView2: View {
                 Button(action: {
                     print("Scanning...")
                     // 여기에 실제 스캔 작업 로직을 넣습니다.
-                    guard let arView = arViewModel.arView else {
+                    guard arViewModel.arView != nil else {
                         return
                     }
                     scanPlane(arViewModel: arViewModel)
@@ -126,6 +127,7 @@ struct ContentView2: View {
 }
 
 struct ARViewContainer: UIViewRepresentable {
+    typealias UIViewType = ARView
     @EnvironmentObject var arViewModel: ARViewModel
     private var updateSubscription: Cancellable?
   
@@ -186,7 +188,7 @@ struct ARViewContainer: UIViewRepresentable {
         setupARView()
         context.coordinator.arView = arViewModel.arView
         arViewModel.arView?.session.delegate = context.coordinator
-
+      
         return arViewModel.arView!
     }
     
@@ -215,9 +217,13 @@ struct ARViewContainer: UIViewRepresentable {
     
     
     private func setupARView() {
+        guard let arView = arViewModel.arView else {
+            return
+        }
         let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = [.horizontal, .vertical]
-        arViewModel.arView?.session.run(configuration)
+        configuration.planeDetection = []
+        arView.session.run(configuration)
+        _ = FocusEntity(on: arView, style: .classic(color: .orange))
     }
     
     func canPerformRaycast() -> Bool {

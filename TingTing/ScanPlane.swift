@@ -86,12 +86,12 @@ func placePlaneInARView(arView: ARView, points: [SIMD3<Float>]) async {
     guard let planeEntity =  await createPlane(from: points) else { return }
     // ARSession에서 AnchorEntity를 생성하여 3D 공간의 중심에 배치
     let anchorEntity = await AnchorEntity() // 중심점을 기준으로 배치
-    DispatchQueue.main.async {
+    await MainActor.run {
         anchorEntity.name = "spherePlane"
         print("Anchor Position \(String(describing: AnchorEntity.position))")
+        anchorEntity.addChild(planeEntity)
+        arView.scene.addAnchor(anchorEntity)
     }
-    await anchorEntity.addChild(planeEntity)
-    await arView.scene.addAnchor(anchorEntity)
 }
 
 // 4개의 점의 평균을 계산하여 중심점을 구하는 함수
@@ -111,7 +111,7 @@ func calculateCenter(of points: [SIMD3<Float>]) -> SIMD3<Float> {
 
 func loadModel(for arView: ARView, name : String = "") {
     // USDZ 파일 로딩
-    guard let modelEntity = try? ModelEntity.loadModel(named: name == "" ? "Scene.usdz" :"scull.usdz" ) else {
+    guard let modelEntity = try? ModelEntity.loadModel(named: name ) else {
         print("Failed to load the USDZ model.")
         return
     }
@@ -119,42 +119,42 @@ func loadModel(for arView: ARView, name : String = "") {
     modelEntity.generateCollisionShapes(recursive: true)
     
     // 모이 로드되면, 화면 중앙에 위치시키기 위한 raycast를 실행
-    placeModelInCenter(for: arView, modelEntity: modelEntity , name : name )
+    placeModelInCenter(for: arView, modelEntity: modelEntity , anchorName : "baseAnchor" )
     // showTracker(for: arView, modelEntity: modelEntity)
 }
-
 func removeAnchorWithName(for arView: ARView, name: String) {
-    var i = 0
-    for anchor in arView.scene.anchors {
-        if anchor.name == name {
-            
-            print("\(i) deleted anchor \(anchor.name)")
-            if let modelEntity = anchor.children.first(where: { $0 is ModelEntity }) as? ModelEntity {
-                removeModelEntityAndChildren(modelEntity)
-                       }
-            arView.scene.removeAnchor(anchor) // 앵커 제거
-            print("앵커 제거됨: \(anchor.name) ")
-            // 이름이 맞는 앵커를 찾았으면 루프 종료
-            i += 1
+    DispatchQueue.main.async {
+        var i = 0
+        for anchor in arView.scene.anchors {
+            if anchor.name == name {
+                print("\(i) deleted anchor \(anchor.name) count: \(arView.scene.anchors.count)")
+                if let modelEntity = anchor.children.first(where: { $0 is ModelEntity }) as? ModelEntity {
+                    removeModelEntityAndChildren(modelEntity)
+                }
+                arView.scene.removeAnchor(anchor) 
+                print("앵커 제거됨: \(anchor.name) ")
+                i += 1
+            }
+        }
+        
+        for anchor in arView.scene.anchors {
+            print("현재 앵커 목록: \(anchor.name )  count: \(arView.scene.anchors.count)")
         }
     }
-    for anchor in arView.scene.anchors {
-           print("현재 앵커 목록: \(anchor.name )")
-       }
-    
 }
 
 func removeModelEntityAndChildren(_ modelEntity: ModelEntity) {
-    // 모델 엔티티의 자식들이 있다면 모두 제거
-    for child in modelEntity.children {
-        // 자식 객체를 재귀적으로 제거
-        removeModelEntityAndChildren(child as! ModelEntity) // 자식도 같은 방식으로 처리
-    }
+    DispatchQueue.main.async {
+        for child in modelEntity.children {
+            print("deleted child entity \(child.name)")
+            removeModelEntityAndChildren(child as! ModelEntity) // ✅ 메인 스레드에서 실행
+        }
 
-    // 자식 제거 후 모델 엔티티를 부모로부터 제거
-    modelEntity.removeFromParent()
-    print("모델 엔티티 및 자식들이 제거됨: \(modelEntity.name )")
+        modelEntity.removeFromParent() // ✅ 메인 스레드에서 실행
+        print("모델 엔티티 및 자식들이 제거됨: \(modelEntity.name )")
+    }
 }
+
 
 func startSetup(arViewModel: ARViewModel) {
     // USDZ 파일 로딩
@@ -192,7 +192,7 @@ func endSetup(arViewModel: ARViewModel) {
 
 
 // 화면 중앙에서 raycast하여 모델을 올려놓는 함수
-func placeModelInCenter(for arView: ARView, modelEntity: ModelEntity , name : String = "" ) {
+func placeModelInCenter(for arView: ARView, modelEntity: ModelEntity , anchorName : String = "" ) {
     // 화면 중앙을 기준으로 raycast 수행
     let center = CGPoint(x: arView.frame.size.width / 2, y: arView.frame.size.height / 2)
     print("center \(center)")
@@ -200,8 +200,8 @@ func placeModelInCenter(for arView: ARView, modelEntity: ModelEntity , name : St
         // Raycast 위치에서 모델을 배치
         let anchor = AnchorEntity(world: result.worldTransform)
         print("worldTransform \(result.worldTransform.columns.3)")
-        if name != "" {
-            anchor.name = name
+        if anchorName != "" {
+            anchor.name = anchorName
         }
         anchor.addChild(modelEntity)
         arView.scene.addAnchor(anchor)
@@ -246,8 +246,15 @@ func showTracker(for arView: ARView, modelEntity: ModelEntity){
 }
 
 func findRaycastResult(for arView: ARView, point: CGPoint) {
-    
-    print("point : \(point)")
+//    RealityKit > Scene > raycast()
+//    @MainActor @preconcurrency
+//    func raycast(
+//        from startPosition: SIMD3<Float>,
+//        to endPosition: SIMD3<Float>,
+//        query: CollisionCastQueryType = .all,
+//        mask: CollisionGroup = .all,
+//        relativeTo referenceEntity: Entity? = nil
+//    ) -> [CollisionCastHit]    print("point : \(point)")
     if let entity = arView.entity(at: point) {
         print(" Entity name : \(entity.name)")
         if let anchor = entity.anchor {

@@ -57,6 +57,9 @@ class ARViewModel : ObservableObject{
        // 화면의 중앙에서 raycast를 수행
         let center = arView.center
         DispatchQueue.main.async{
+            //arview.session.raycast : 현실세계 감지 arview.makeRaycastQuery 먼저 하고..
+            //arview.scene.raycast : arView.scene.raycast(origin: origin, direction: direction)
+            //a arView.raycast(from: center, allowing: .estimatedPlane, alignment: .any).first
             if let raycastQuery = arView.makeRaycastQuery(from: center, allowing: .estimatedPlane, alignment: .any) {
                 
                 if let raycastResult = arView.session.raycast(raycastQuery).first {
@@ -70,8 +73,8 @@ class ARViewModel : ObservableObject{
                         self.z = hitPosition.z
                     }
                 }
-                removeAnchorWithName(for: arView, name: "CenterImageAnchor")
-                loadModel(for: arView, name: "CenterImageAnchor")
+//                removeAnchorWithName(for: arView, name: "CenterImageAnchor")
+//                loadModel(for: arView, name: "CenterImageAnchor")
             }  //
         }
     }
