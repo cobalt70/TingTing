@@ -75,7 +75,7 @@ func scanPlane(arViewModel :ARViewModel ) {
                 if projectedPointArray.count > 0 {
                     print("projectedPointArray count: \(projectedPointArray.count)")
                     let projectedTile = Tile(row: row, col: col , position: projectedPointArray, normal:normal)
-                    tileGrid.projectedTiles[col][row] = projectedTile
+                   // tileGrid.projectedTiles[col][row] = projectedTile
                 }
             }
             
