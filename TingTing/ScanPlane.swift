@@ -23,7 +23,7 @@ func scanPlane(arViewModel :ARViewModel ) {
     let padding = 0.05
     let isLineCompleted = true
     
- 
+    
     let fixedY = max(startPoint.y, endPoint.y) + 0.01
     //    guard let n1 = tileGrid.calculateUnitVector(from: startPoint, to: endPoint, fixedY: Float(fixedY)) else {return}
     //    let n2 = tileGrid.rotate90DegreesAroundOrigin(n1)
@@ -32,10 +32,11 @@ func scanPlane(arViewModel :ARViewModel ) {
     //
     tileGrid.updateGrid(totalRows: totalRows, totalCols: totalCols, centerCol: centerCol, tileWidth: Float(tileWidth), tileHeight: Float(tileHeight), padding: Float(padding), fixedY: Float(fixedY), startPoint: startPoint, endPoint: endPoint)
     print("totalRows \(totalRows) totalCols \(totalCols) centerCols\(centerCol)")
-    print("tile count: \(tileGrid.tiles.count) tiles : \(tileGrid.tiles)")
+    print("tile count: \(tileGrid.tiles.count) ")
+    
     for col in 0..<totalCols {
         for row in 0..<totalRows {
-    
+            
             guard let tile = tileGrid.getTile(atRow: row, col: col) else {return}
             let center = tile.center
             let point0 = tile.topLeft
@@ -43,13 +44,45 @@ func scanPlane(arViewModel :ARViewModel ) {
             let point2 = tile.bottomRight
             let point3 = tile.bottomLeft
             let pointsArray = [ point0, point1, point2, point3, center]
+            var projectedPointArray :[simd_float3] = []
+            var normal : simd_float3 = .zero
             Task{
                 await  placePlaneInARView(arView: arViewModel.arView!, points: pointsArray)
+                for point in pointsArray {
+                    
+                    let query =  ARRaycastQuery(origin: point, direction: simd_float3(0, -1, 0), allowing: .estimatedPlane, alignment: .any)
+                    print("query \(query)")
+                    let results = await arViewModel.arView!.session.raycast(query)
+                    if results == [] {
+                        print("no results for raycast")
+                        continue}
+                    else {
+                        print("results for raycast \(String(describing: results.first))")
+                    }
+                    if let firstResult = results.first {
+                        print("First result: \(firstResult) \(String(describing: firstResult.anchor))")
+                        
+                        let transform = firstResult.worldTransform
+                        // 법선 벡터 (normal vector)는 변환 행렬의 세 번째 열을 사용합니다.
+                        let normalVector = simd_make_float3(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z)
+                        //중복이지만 일단 Go
+                        normal = normalVector
+                        let projectedPoint = simd_make_float3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
+                        print("normalVector: \(normalVector) projected Pts: \(projectedPoint)")
+                        projectedPointArray.append(projectedPoint)
+                    }
+                }
+                
+            }
+            if projectedPointArray.count == 5 {
+                let projectedTile = Tile(row: row, col: col , position: projectedPointArray, normal:normal)
+                tileGrid.projectedTiles[col][row] = projectedTile
             }
         }
         
     }
     
+    print("projectedGrid \(tileGrid.projectedTiles)")
 }
 
 

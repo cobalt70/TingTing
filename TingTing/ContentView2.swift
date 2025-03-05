@@ -23,13 +23,13 @@ struct ContentView2: View {
                 .environmentObject(arViewModel)
                 .edgesIgnoringSafeArea(.all)
             
-            Image(systemName: "viewfinder")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 50, height: 50)
-                .foregroundColor(.orange) // 주황색으로 설정
-                .allowsHitTesting(false)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+//            Image(systemName: "viewfinder")
+//                .resizable()
+//                .scaledToFit()
+//                .frame(width: 50, height: 50)
+//                .foregroundColor(.orange) // 주황색으로 설정
+//                .allowsHitTesting(false)
+//                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             
         }
         .safeAreaInset(edge: .bottom){
@@ -133,7 +133,7 @@ struct ARViewContainer: UIViewRepresentable {
   
     static var isUpdatingScreen: Bool = false
     
-    class Coordinator: NSObject, ARSessionDelegate {
+    class Coordinator: NSObject, ARSessionDelegate,ARCoachingOverlayViewDelegate  {
         var parent: ARViewContainer
         var arView : ARView?
         
@@ -178,6 +178,21 @@ struct ARViewContainer: UIViewRepresentable {
                 print("Tracking normal")
             }
         }
+        
+        func coachingOverlayViewWillActivate(_ coachingOverlayView: ARCoachingOverlayView) {
+            print("Coaching Overlay 활성화됨")
+            
+        }
+        
+        // Coaching Overlay가 비활성화될 때 호출됨
+        func coachingOverlayViewDidDeactivate(_ coachingOverlayView: ARCoachingOverlayView) {
+            print("Coaching Overlay 완료됨")
+        }
+        
+        // 목표가 변경되었을 때 호출됨
+        func coachingOverlayViewDidRequestSessionReset(_ coachingOverlayView: ARCoachingOverlayView) {
+            print("세션 리셋 요청됨")
+        }
     }
     
     func makeCoordinator() -> Coordinator {
@@ -186,17 +201,35 @@ struct ARViewContainer: UIViewRepresentable {
     
     func makeUIView(context: Context) -> ARView {
         setupARView()
+       
         context.coordinator.arView = arViewModel.arView
         arViewModel.arView?.session.delegate = context.coordinator
-      
+        
+        let coachingOverlay = ARCoachingOverlayView()
+        coachingOverlay.activatesAutomatically = true
+        coachingOverlay.goal = .horizontalPlane
+        coachingOverlay.session = arViewModel.arView?.session
+        coachingOverlay.delegate = context.coordinator
+        DispatchQueue.main.async {
+            arViewModel.arView!.addSubview(coachingOverlay)
+            
+            // 오토레이아웃 제약 조건 추가
+            coachingOverlay.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                coachingOverlay.leadingAnchor.constraint(equalTo:  arViewModel.arView!.leadingAnchor),
+                coachingOverlay.trailingAnchor.constraint(equalTo:  arViewModel.arView!.trailingAnchor),
+                coachingOverlay.topAnchor.constraint(equalTo:  arViewModel.arView!.topAnchor),
+                coachingOverlay.bottomAnchor.constraint(equalTo:  arViewModel.arView!.bottomAnchor)
+            ])
+        }
         return arViewModel.arView!
     }
     
     func updateUIView(_ uiView: ARView, context: Context) {
-//        guard !ARViewContainer.isUpdatingScreen else {return}
-//        DispatchQueue.main.async {
-//            ARViewContainer.isUpdatingScreen = true
-//        }
+        //        guard !ARViewContainer.isUpdatingScreen else {return}
+        //        DispatchQueue.main.async {
+        //            ARViewContainer.isUpdatingScreen = true
+        //        }
         
         if let parentView = uiView.superview {
             if let arView = context.coordinator.arView {
@@ -204,12 +237,12 @@ struct ARViewContainer: UIViewRepresentable {
             }
         }
         
-//        let arView = arViewModel.arView!
-//        removeAnchorWithName(for: arView, name: "CenterImageAnchor")
-//        loadModel(for: arView, name: "CenterImageAnchor")
-//        
+        //        let arView = arViewModel.arView!
+        //        removeAnchorWithName(for: arView, name: "CenterImageAnchor")
+        //        loadModel(for: arView, name: "CenterImageAnchor")
+        //
         print("\(Date()) updateUIView")
-//        DispatchQueue.main.async {
+        //        DispatchQueue.main.async {
 //            ARViewContainer.isUpdatingScreen = false
 //        }
         
@@ -221,9 +254,9 @@ struct ARViewContainer: UIViewRepresentable {
             return
         }
         let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = []
+        configuration.planeDetection = [.horizontal , .vertical]
         arView.session.run(configuration)
-        _ = FocusEntity(on: arView, style: .classic(color: .orange))
+        _ = FocusEntity(on: arView, style: .colored(onColor: MaterialColorParameter.color(.blue), offColor: MaterialColorParameter.color(.yellow), nonTrackingColor: MaterialColorParameter.color(.green)))
     }
     
     func canPerformRaycast() -> Bool {

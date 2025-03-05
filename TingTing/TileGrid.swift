@@ -22,7 +22,31 @@ struct Tile {
     
     var row: Int
     var col: Int
-  
+    
+    init (row: Int, col: Int, topLeft: simd_float3 , topRight :simd_float3 , bottomRight : simd_float3,
+          bottomLeft: simd_float3, center: simd_float3, normal: simd_float3) {
+        self.row = row
+        self.col = col
+        self.topLeft = topLeft
+        self.topRight = topRight
+        self.bottomLeft = bottomLeft
+        self.bottomRight = bottomRight
+        self.center = center
+        self.normalVector = normal
+       
+    }
+    
+    init (row: Int, col: Int, position: [simd_float3] , normal : simd_float3) {
+        
+        self.row = row
+        self.col = col
+        self.topLeft = position[0]
+        self.topRight = position[1]
+        self.bottomRight = position[2]
+        self.bottomLeft = position[3]
+        self.center = position[4]
+        self.normalVector = normal
+    }
 }
 
 /// 타일 그리드를 관리하는 class
@@ -51,6 +75,7 @@ class TileGrid  {
     
     
     var tiles: [[Tile]] = []
+    var projectedTiles : [[Tile]] = []
     
     init() {
         
@@ -177,12 +202,10 @@ class TileGrid  {
                 let normalVector = simd_float3(0, 1, 0)
                 
                 // 타일 생성
-                let tile = Tile(
+                let tile = Tile( row: row, col: col,
                     topLeft: topLeft, topRight: topRight,
                     bottomRight: bottomRight, bottomLeft: bottomLeft,
-                    center: center, normalVector: normalVector,
-                    row: row, col: col
-                )
+                    center: center, normal: normalVector)
                 tileCol.append(tile)
             }
             generatedTiles.append(tileCol)
