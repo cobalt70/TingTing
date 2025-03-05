@@ -75,7 +75,7 @@ class TileGrid  {
     
     
     var tiles: [[Tile]] = []
-    var projectedTiles : [[Tile]] = []
+    var projectedTiles : [[Tile]] = [[]]
     
     init() {
         
