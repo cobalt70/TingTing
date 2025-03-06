@@ -254,7 +254,7 @@ struct ARViewContainer: UIViewRepresentable {
             return
         }
         let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = [.horizontal , .vertical]
+        configuration.planeDetection = [.horizontal, .vertical]
         arView.session.run(configuration)
         _ = FocusEntity(on: arView, style: .colored(onColor: MaterialColorParameter.color(.blue), offColor: MaterialColorParameter.color(.yellow), nonTrackingColor: MaterialColorParameter.color(.green)))
     }

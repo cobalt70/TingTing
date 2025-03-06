@@ -15,7 +15,8 @@ func scanPlane(arViewModel :ARViewModel ) {
     
     
     let distance = distance(startPoint ,endPoint)
-    let totalRows = Int((distance + (tileGrid.tileHeight)/2) / tileGrid.tileWidth ) + tileGrid.extraRows
+    let totalRows = Int((distance + (tileGrid.tileHeight)/2) / tileGrid.tileHeight ) + tileGrid.extraRows
+    print("distance \(distance), totalRows \(totalRows)")
     let totalCols = Int(Double(totalRows) * 0.1) * 2 + 1 // tile이 row == 10 > col ==3
     let centerCol = Int(totalCols / 2) // index starts friom = 0
     let tileWidth  = 0.3 // 타일의 가로 길이
@@ -24,7 +25,7 @@ func scanPlane(arViewModel :ARViewModel ) {
     let isLineCompleted = true
     
     
-    let fixedY = max(startPoint.y, endPoint.y) + 0.01
+    let fixedY = max(startPoint.y, endPoint.y) + 0.3 
     //    guard let n1 = tileGrid.calculateUnitVector(from: startPoint, to: endPoint, fixedY: Float(fixedY)) else {return}
     //    let n2 = tileGrid.rotate90DegreesAroundOrigin(n1)
     //
@@ -32,7 +33,7 @@ func scanPlane(arViewModel :ARViewModel ) {
     //
     tileGrid.updateGrid(totalRows: totalRows, totalCols: totalCols, centerCol: centerCol, tileWidth: Float(tileWidth), tileHeight: Float(tileHeight), padding: Float(padding), fixedY: Float(fixedY), startPoint: startPoint, endPoint: endPoint)
     print("totalRows \(totalRows) totalCols \(totalCols) centerCols\(centerCol)")
-    print("tile count: \(tileGrid.tiles.count) ")
+    print("tile count: \(tileGrid.tiles.count) tiles: \(tileGrid.tiles.flatMap { $0 }.count) ")
     
     for col in 0..<totalCols {
         for row in 0..<totalRows {
@@ -43,81 +44,97 @@ func scanPlane(arViewModel :ARViewModel ) {
             let point1 = tile.topRight
             let point2 = tile.bottomRight
             let point3 = tile.bottomLeft
-            let pointsArray = [ point0, point1, point2, point3, center]
-            var projectedPointArray :[simd_float3] = []
+            let pointsArray :[simd_float3?] = [ point0, point1, point2, point3, center]
+            var projectedPointArray :[simd_float3?] = []
+            
             var normal : simd_float3 = .zero
-            Task{
-                await  placePlaneInARView(arView: arViewModel.arView!, points: pointsArray)
-                for point in pointsArray {
-                    
-                    let query =  ARRaycastQuery(origin: point, direction: simd_float3(0, -1, 0), allowing: .estimatedPlane, alignment: .any)
-                    print("query \(query)")
-                    let results = await arViewModel.arView!.session.raycast(query)
-                    if results == [] {
-                        print("no results for raycast")
-                        continue}
-                    else {
-                        print("results for raycast \(String(describing: results.first))")
-                    }
-                    if let firstResult = results.first {
-                        print("First result: \(firstResult) \(String(describing: firstResult.anchor))")
-                        
-                        let transform = firstResult.worldTransform
-                        // 법선 벡터 (normal vector)는 변환 행렬의 세 번째 열을 사용합니다.
-                        let normalVector = simd_make_float3(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z)
-                        //중복이지만 일단 Go
-                        normal = normalVector
-                        let projectedPoint = simd_make_float3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
-                        print("normalVector: \(normalVector) projected Pts: \(projectedPoint)")
-                        projectedPointArray.append(projectedPoint)
-                    }
-                }
-                if projectedPointArray.count > 0 {
-                    print("projectedPointArray count: \(projectedPointArray.count)")
-                    let projectedTile = Tile(row: row, col: col , position: projectedPointArray, normal:normal)
-                   // tileGrid.projectedTiles[col][row] = projectedTile
+            var projected : Bool = false
+            
+            for point in pointsArray {
+                guard let point = point else {continue}
+                let query =  ARRaycastQuery(origin: point, direction: simd_float3(0, -1, 0), allowing: .estimatedPlane, alignment: .any)
+                print("query \(query)")
+                let results =  arViewModel.arView!.session.raycast(query)
+                
+                
+                if let firstResult = results.first {
+                    print("raycast success ")
+                    let transform = firstResult.worldTransform
+                    // 법선 벡터 (normal vector)는 변환 행렬의 세 번째 열을 사용합니다.
+                    let normalVector = simd_make_float3(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z)
+                    //중복이지만 일단 Go
+                    normal = normalVector
+                    let projectedPoint = simd_make_float3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
+                    print("normal: \(normalVector) projected: \(projectedPoint) original: \(point)")
+                    projectedPointArray.append(projectedPoint)
+                } else {
+                    print("raycast failed")
+                    projectedPointArray.append(nil)
                 }
             }
+            if projectedPointArray.count >= 5 {
+                projected = true
+                print("projectedPointArray count == 5  \(projectedPointArray.count)")
+                let projectedTile = Tile(row: row, col: col , position: projectedPointArray, normal:normal , projected: projected)
+                tileGrid.projectedTiles[col].append(projectedTile)
+            } else {
+                projected = false
+                print("projectedPointArray count < 5 \(projectedPointArray.count)")
+                tileGrid.projectedTiles[col].append(Tile(row: row, col: col , position: projectedPointArray, normal:normal , projected: projected) )
+            }
             
+            Task{
+                
+                await  placePlaneInARView(arView: arViewModel.arView!, points: pointsArray , color : #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 1))
+                print(" projectedPointArray \(projectedPointArray)")
+                await  placePlaneInARView(arView: arViewModel.arView!, points: projectedPointArray, color : UIColor.cyan)
+                
+                await BuildMeshTriangstrip(arView: arViewModel.arView!, points: projectedPointArray)
+                
+                
+                
+            }
         }
-        
+       
     }
-    
     print("projectedGrid \(tileGrid.projectedTiles)")
 }
 
 
 //4개로 했다가 센터도 추가 5개의 점을 받아서 사각형 평면을 생성하는 함수
-func createPlane(from points: [SIMD3<Float>]) async -> ModelEntity? {
-    guard points.count == 5 else { return nil }
+func createPlane(from points: [simd_float3?] ,color:UIColor) async -> ModelEntity? {
+    guard points.count > 0 else { return nil }
     // 평면을 생성하는 ModelEntity (이전 로직에서 확장 가능)
     let planeEntity = await ModelEntity()
     
     // 1cm 크기의 노란색 점(구) 생성
     let sphereMesh = await MeshResource.generateSphere(radius: 0.01)
-  
+    var color : UIColor = color
+    
+    if points.count < 5 {
+        color = .red
+    }
     for point in points {
+        
+        guard let point = point else {continue}
         let sphereEntity = await ModelEntity(mesh: sphereMesh)
-     
+        
         DispatchQueue.main.async{
-            let material = SimpleMaterial(color: .yellow, roughness: 0.1, isMetallic: true)
+            let material = SimpleMaterial(color: color, roughness: 0.1, isMetallic: true)
             sphereEntity.model =  ModelComponent(mesh: sphereMesh, materials: [material])
             sphereEntity.position = point
             sphereEntity.name = "sphere"
-            
+            planeEntity.name = "plane"
         }
         
         await planeEntity.addChild(sphereEntity) // 구를 planeEntity에 추가
     }
-    DispatchQueue.main.async{
-        planeEntity.name = "plane"
-    }
-    print("planeEntity Position \(await planeEntity.position)")
+    
     return planeEntity
 }
 
-func placePlaneInARView(arView: ARView, points: [SIMD3<Float>]) async {
-    guard let planeEntity =  await createPlane(from: points) else { return }
+func placePlaneInARView(arView: ARView, points: [SIMD3<Float>?] , color: UIColor) async {
+    guard let planeEntity =  await createPlane(from: points , color: color) else { return }
     // ARSession에서 AnchorEntity를 생성하여 3D 공간의 중심에 배치
     let anchorEntity = await AnchorEntity() // 중심점을 기준으로 배치
     await MainActor.run {
@@ -125,6 +142,41 @@ func placePlaneInARView(arView: ARView, points: [SIMD3<Float>]) async {
         print("Anchor Position \(String(describing: AnchorEntity.position))")
         anchorEntity.addChild(planeEntity)
         arView.scene.addAnchor(anchorEntity)
+    }
+}
+
+func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: Float = 0.016) async {
+    let pointsWithoutNil = points.compactMap { $0 }
+    
+    guard pointsWithoutNil.count >= 4 else {
+        print("Not enough points to build a mesh.")
+        return
+    }
+    var meshDescriptor : MeshDescriptor = MeshDescriptor()
+    meshDescriptor.positions = MeshBuffers.Positions(pointsWithoutNil)
+    let indices :  [UInt32] = [
+        0, 3, 1,
+        1, 3, 2
+    ]
+    
+    let lineThickness: Float = thickness
+
+    meshDescriptor.primitives = .triangles(indices)
+    do {
+        let mesh = try await MeshResource.generate(from:[meshDescriptor])
+        let meshEntity = await ModelEntity(mesh: mesh)
+        
+        // Optionally, add material to the mesh entity
+        DispatchQueue.main.async {
+            meshEntity.model?.materials = [SimpleMaterial(color: .red, isMetallic: false)]
+        }
+       
+        let anchorEntity = await AnchorEntity(plane: .horizontal)
+        await anchorEntity.addChild(meshEntity)
+   
+        await arView.scene.addAnchor(anchorEntity)
+    } catch{
+        print(error)
     }
 }
 
@@ -327,3 +379,6 @@ private func convertSwiftUIImageToUIImage(systemName: String) -> UIImage? {
             controller.view.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
         }
     }
+
+
+
