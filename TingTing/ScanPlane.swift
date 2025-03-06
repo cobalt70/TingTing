@@ -61,7 +61,7 @@ func scanPlane(arViewModel :ARViewModel ) {
                     print("raycast success ")
                     let transform = firstResult.worldTransform
                     // 법선 벡터 (normal vector)는 변환 행렬의 세 번째 열을 사용합니다.
-                    let normalVector = simd_make_float3(transform.columns.2.x, transform.columns.2.y, transform.columns.2.z)
+                    let normalVector = simd_make_float3(transform.columns.1.x, transform.columns.1.y, transform.columns.1.z)
                     //중복이지만 일단 Go
                     normal = normalVector
                     let projectedPoint = simd_make_float3(transform.columns.3.x, transform.columns.3.y, transform.columns.3.z)
@@ -87,6 +87,7 @@ func scanPlane(arViewModel :ARViewModel ) {
                 
                 await  placePlaneInARView(arView: arViewModel.arView!, points: pointsArray , color : #colorLiteral(red: 1, green: 0.5763723254, blue: 0, alpha: 1))
                 print(" projectedPointArray \(projectedPointArray)")
+          
                 await  placePlaneInARView(arView: arViewModel.arView!, points: projectedPointArray, color : UIColor.cyan)
                 
                 await BuildMeshTriangstrip(arView: arViewModel.arView!, points: projectedPointArray)
@@ -146,7 +147,8 @@ func placePlaneInARView(arView: ARView, points: [SIMD3<Float>?] , color: UIColor
 }
 
 func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: Float = 0.016) async {
-    let pointsWithoutNil = points.compactMap { $0 }
+    let pointsArray = [ points[3], points[2], points[1], points[0] ]  // 4각형을 반시계로 바꿈
+    let pointsWithoutNil = pointsArray.compactMap { $0 }
     
     guard pointsWithoutNil.count >= 4 else {
         print("Not enough points to build a mesh.")
@@ -155,28 +157,35 @@ func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: F
     var meshDescriptor : MeshDescriptor = MeshDescriptor()
     meshDescriptor.positions = MeshBuffers.Positions(pointsWithoutNil)
     let indices :  [UInt32] = [
-        0, 3, 1,
-        1, 3, 2
+        0, 2, 1,  // First triangle
+        0,3, 2 // Second triangle
     ]
     
     let lineThickness: Float = thickness
-
+    
     meshDescriptor.primitives = .triangles(indices)
     do {
         let mesh = try await MeshResource.generate(from:[meshDescriptor])
+        print("Mesh generated successfully: \(mesh)")
+        
         let meshEntity = await ModelEntity(mesh: mesh)
         
-        // Optionally, add material to the mesh entity
+        
         DispatchQueue.main.async {
-            meshEntity.model?.materials = [SimpleMaterial(color: .red, isMetallic: false)]
+            var material = SimpleMaterial(color: .red, isMetallic: false)
+            material.triangleFillMode = .fill
+            meshEntity.model?.materials = [material]
         }
-       
-        let anchorEntity = await AnchorEntity(plane: .horizontal)
+        
+        print("meshEntity \(await meshEntity.position)")
+        
+        let anchorEntity = await AnchorEntity()
         await anchorEntity.addChild(meshEntity)
    
         await arView.scene.addAnchor(anchorEntity)
+        print("mesh success")
     } catch{
-        print(error)
+        print("mesh error \(error)")
     }
 }
 
