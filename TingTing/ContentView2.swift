@@ -135,7 +135,7 @@ struct ARViewContainer: UIViewRepresentable {
     
     class Coordinator: NSObject, ARSessionDelegate,ARCoachingOverlayViewDelegate  {
         var parent: ARViewContainer
-        var arView : ARView?
+        weak var arView : ARView?
         
         init(parent: ARViewContainer) {
             self.parent = parent
@@ -211,7 +211,7 @@ struct ARViewContainer: UIViewRepresentable {
         coachingOverlay.session = arViewModel.arView?.session
         coachingOverlay.delegate = context.coordinator
         DispatchQueue.main.async {
-            arViewModel.arView!.addSubview(coachingOverlay)
+            arViewModel.arView?.addSubview(coachingOverlay)
             
             // 오토레이아웃 제약 조건 추가
             coachingOverlay.translatesAutoresizingMaskIntoConstraints = false

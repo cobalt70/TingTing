@@ -158,19 +158,20 @@ func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: F
     meshDescriptor.positions = MeshBuffers.Positions(pointsWithoutNil)
     let indices :  [UInt32] = [
         0, 2, 1,  // First triangle
-        0,3, 2 // Second triangle
+        0, 3, 2 // Second triangle
     ]
     
     let lineThickness: Float = thickness
     
     meshDescriptor.primitives = .triangles(indices)
+
     do {
         let mesh = try await MeshResource.generate(from:[meshDescriptor])
         print("Mesh generated successfully: \(mesh)")
         
         let meshEntity = await ModelEntity(mesh: mesh)
         
-        
+        await meshEntity.generateCollisionShapes(recursive: false)
         DispatchQueue.main.async {
             var material = SimpleMaterial(color: .red, isMetallic: false)
             material.triangleFillMode = .fill

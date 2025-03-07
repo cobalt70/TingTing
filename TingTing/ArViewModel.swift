@@ -11,6 +11,7 @@ import RealityKit
 
 
 class ARViewModel : ObservableObject{
+    //static var shared = ARViewModel()
     @Published var arView: ARView?
     @Published var raycastHitPosition: simd_float3?
     @Published var x : Float = 0
