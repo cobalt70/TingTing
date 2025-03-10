@@ -25,7 +25,7 @@ func scanPlane(arViewModel :ARViewModel ) {
     let isLineCompleted = true
     
     
-    let fixedY = max(startPoint.y, endPoint.y) + 0.3 
+    let fixedY = max(startPoint.y, endPoint.y) + 0.05
     //    guard let n1 = tileGrid.calculateUnitVector(from: startPoint, to: endPoint, fixedY: Float(fixedY)) else {return}
     //    let n2 = tileGrid.rotate90DegreesAroundOrigin(n1)
     //
@@ -104,7 +104,7 @@ func scanPlane(arViewModel :ARViewModel ) {
 
 //4개로 했다가 센터도 추가 5개의 점을 받아서 사각형 평면을 생성하는 함수
 func createPlane(from points: [simd_float3?] ,color:UIColor) async -> ModelEntity? {
-    guard points.count > 0 else { return nil }
+    guard points.count >= 4 else { return nil }
     // 평면을 생성하는 ModelEntity (이전 로직에서 확장 가능)
     let planeEntity = await ModelEntity()
     
@@ -135,6 +135,8 @@ func createPlane(from points: [simd_float3?] ,color:UIColor) async -> ModelEntit
 }
 
 func placePlaneInARView(arView: ARView, points: [SIMD3<Float>?] , color: UIColor) async {
+    guard points.count >= 4 else {return}
+    
     guard let planeEntity =  await createPlane(from: points , color: color) else { return }
     // ARSession에서 AnchorEntity를 생성하여 3D 공간의 중심에 배치
     let anchorEntity = await AnchorEntity() // 중심점을 기준으로 배치
@@ -146,14 +148,16 @@ func placePlaneInARView(arView: ARView, points: [SIMD3<Float>?] , color: UIColor
     }
 }
 
-func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: Float = 0.016) async {
-    let pointsArray = [ points[3], points[2], points[1], points[0] ]  // 4각형을 반시계로 바꿈
-    let pointsWithoutNil = pointsArray.compactMap { $0 }
-    
-    guard pointsWithoutNil.count >= 4 else {
+func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: Float = 0.016)
+async {
+    guard points.count >= 4 else {
         print("Not enough points to build a mesh.")
         return
     }
+    
+    let pointsArray = [ points[3], points[2], points[1], points[0] ]  // 4각형을 반시계로 바꿈
+    let pointsWithoutNil = pointsArray.compactMap { $0 }
+    
     var meshDescriptor : MeshDescriptor = MeshDescriptor()
     meshDescriptor.positions = MeshBuffers.Positions(pointsWithoutNil)
     let indices :  [UInt32] = [
@@ -164,7 +168,7 @@ func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: F
     let lineThickness: Float = thickness
     
     meshDescriptor.primitives = .triangles(indices)
-
+    
     do {
         let mesh = try await MeshResource.generate(from:[meshDescriptor])
         print("Mesh generated successfully: \(mesh)")
@@ -182,7 +186,7 @@ func BuildMeshTriangstrip(arView: ARView, points: [SIMD3<Float>?] , thickness: F
         
         let anchorEntity = await AnchorEntity()
         await anchorEntity.addChild(meshEntity)
-   
+        
         await arView.scene.addAnchor(anchorEntity)
         print("mesh success")
     } catch{
@@ -243,10 +247,10 @@ func removeModelEntityAndChildren(_ modelEntity: ModelEntity) {
     DispatchQueue.main.async {
         for child in modelEntity.children {
             print("deleted child entity \(child.name)")
-            removeModelEntityAndChildren(child as! ModelEntity) // ✅ 메인 스레드에서 실행
+            removeModelEntityAndChildren(child as! ModelEntity)
         }
 
-        modelEntity.removeFromParent() // ✅ 메인 스레드에서 실행
+        modelEntity.removeFromParent() 
         print("모델 엔티티 및 자식들이 제거됨: \(modelEntity.name )")
     }
 }
@@ -352,7 +356,8 @@ func findRaycastResult(for arView: ARView, point: CGPoint) {
 //        relativeTo referenceEntity: Entity? = nil
 //    ) -> [CollisionCastHit]    print("point : \(point)")
     if let entity = arView.entity(at: point) {
-        print(" Entity name : \(entity.name)")
+        print(" Entity name : \(entity.name) \(entity)")
+        
         if let anchor = entity.anchor {
             print("Entity Anchor will be deleted \(anchor.debugDescription) ")
             arView.scene.removeAnchor(anchor)

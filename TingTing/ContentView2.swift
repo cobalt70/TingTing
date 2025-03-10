@@ -206,8 +206,10 @@ struct ARViewContainer: UIViewRepresentable {
         arViewModel.arView?.session.delegate = context.coordinator
         
         let coachingOverlay = ARCoachingOverlayView()
+        
         coachingOverlay.activatesAutomatically = true
-        coachingOverlay.goal = .horizontalPlane
+        
+        coachingOverlay.goal = .tracking
         coachingOverlay.session = arViewModel.arView?.session
         coachingOverlay.delegate = context.coordinator
         DispatchQueue.main.async {
@@ -216,10 +218,10 @@ struct ARViewContainer: UIViewRepresentable {
             // 오토레이아웃 제약 조건 추가
             coachingOverlay.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
-                coachingOverlay.leadingAnchor.constraint(equalTo:  arViewModel.arView!.leadingAnchor),
-                coachingOverlay.trailingAnchor.constraint(equalTo:  arViewModel.arView!.trailingAnchor),
-                coachingOverlay.topAnchor.constraint(equalTo:  arViewModel.arView!.topAnchor),
-                coachingOverlay.bottomAnchor.constraint(equalTo:  arViewModel.arView!.bottomAnchor)
+                coachingOverlay.leadingAnchor.constraint(equalTo:  arViewModel.arView!.leadingAnchor, constant: 100),
+                coachingOverlay.trailingAnchor.constraint(equalTo:  arViewModel.arView!.trailingAnchor,constant: -100),
+                coachingOverlay.topAnchor.constraint(equalTo:  arViewModel.arView!.topAnchor,constant: 100),
+                coachingOverlay.bottomAnchor.constraint(equalTo:  arViewModel.arView!.bottomAnchor, constant: -100)
             ])
         }
         return arViewModel.arView!
